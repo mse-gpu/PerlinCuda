@@ -1,17 +1,21 @@
 #include "Tools.hpp"
 
-__global__ static void newtonAnimation(uchar4* ptrDevPixels, int w, int h, DomaineMaths domainNew);
+__global__ static void perlinAnimation(uchar4* ptrDevPixels, int w, int h, DomaineMaths domainNew, int r1, int r2, int r3, int t);
 
-__device__ static int newton(float x, float y);
-
-void launchPerlinAnimation(uchar4* ptrDevPixels, int w, int h, const DomaineMaths& domainNew){
+void launchPerlinAnimation(uchar4* ptrDevPixels, int w, int h, const DomaineMaths& domainNew, int t){
     dim3 blockPerGrid = dim3(32, 16, 1);
     dim3 threadPerBlock = dim3(32, 16, 1);
 
-    newtonAnimation<<<blockPerGrid,threadPerBlock>>>(ptrDevPixels, w, h, domainNew);
+    static int r1 = (rand() % 9000) + 1000;
+    static int r2 = (rand() % 900000) + 100000;
+    static int r3 = (rand() % 1000000000) + 1000000000;
+
+    perlinAnimation<<<blockPerGrid,threadPerBlock>>>(ptrDevPixels, w, h, domainNew, r1, r2, r3, t);
 }
 
-__global__ static void newtonAnimation(uchar4* ptrDevPixels, int w, int h, DomaineMaths domainNew){
+__device__ static float perlinNoise(float x, float y, int r1, int r2, int r3);
+
+__global__ static void perlinAnimation(uchar4* ptrDevPixels, int w, int h, DomaineMaths domainNew, int r1, int r2, int r3, int t){
     int i = threadIdx.y + blockIdx.y * blockDim.y;
     int j = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -33,123 +37,66 @@ __global__ static void newtonAnimation(uchar4* ptrDevPixels, int w, int h, Domai
 	x = domainNew.x0 + pixelJ * dx;
 	y = domainNew.y0 + pixelI * dy;
 
-	int color = newton(x, y);
-	if(color == 0){
-	    ptrDevPixels[tid].x = 0;
-	    ptrDevPixels[tid].y = 0;
-	    ptrDevPixels[tid].z = 0;
-	} else if(color == 1){
-	    ptrDevPixels[tid].x = 255;
-	    ptrDevPixels[tid].y = 0;
-	    ptrDevPixels[tid].z = 0;
-	} else if(color == 2){
-	    ptrDevPixels[tid].x = 0;
-	    ptrDevPixels[tid].y = 255;
-	    ptrDevPixels[tid].z = 0;
-	} else if(color == 3){
-	    ptrDevPixels[tid].x = 0;
-	    ptrDevPixels[tid].y = 0;
-	    ptrDevPixels[tid].z = 255;
-	}
 
-	ptrDevPixels[tid].w = 255;
+	float c = perlinNoise(x+t,y, r1, r2, r3);
+
+	ptrDevPixels[tid].x = 135;
+	ptrDevPixels[tid].y = 206;
+	ptrDevPixels[tid].z = 250;
+	ptrDevPixels[tid].w = c * 255.0;
 
 	tid += nbThreadCuda;
     }
 }
 
-struct vector{
-	float x;
-	float y;
-};
-
-#define LIMIT 1000
-#define PRECISION 1
-#define CIRCLE 3
-#define SQRT3 1.7320508075688772935
-
-__device__ static bool near(float src, float target){
-    float delta = src - target;
-
-    if(delta < 0){
-	delta = -delta;
-    }
-
-    if(delta <= PRECISION){
-	return true;
-    }
-
-    return false;
+__device__ static float interpolate(float x, float y, float a){
+    float val = (1 - cos(a * M_PI)) * 0.5;
+    return x * (1 - val) + y * val;
 }
 
-__device__ static int newton(float x, float y){
-    vector xn = {x,y};
+__device__ static float noise(int x, int y, int r1, int r2, int r3){
+    int n = x + y * 57;
+    n = (n << 13) ^ n;
 
-    int current = 0;
+    return (1.0 - ((n * (n * n * r1 + r2) + r3) & 0x7fffffff) / 1073741824.0);
+}
 
-    int times = 0;
-    int last = 0;
+__device__ static float smooth(float x, float y, int r1, int r2, int r3){
+    float n1 = noise((int)x, (int)y, r1, r2, r3);
+    float n2 = noise((int)x + 1, (int)y, r1, r2, r3);
+    float n3 = noise((int)x, (int)y + 1, r1, r2, r3);
+    float n4 = noise((int)x + 1, (int)y + 1, r1, r2, r3);
 
-    while(current < LIMIT){
-    float fnx = xn.x * xn.x * xn.x - 3 * xn.x * xn.y * xn.y - 1;
-    float fny = xn.y * xn.y * xn.y - 3 * xn.x * xn.x * xn.y;
+    float i1 = interpolate(n1, n2, x - (int)x);
+    float i2 = interpolate(n3, n4, x - (int)x);
 
-    float ja = 3 * xn.x * xn.x - 3 * xn.y * xn.y;
-    float jd = 3 * xn.y * xn.y - 3 * xn.x * xn.x;
-    float jbc = 6 * xn.x * xn.y;
+    return interpolate(i1, i2, y - (int)y);
+}
 
-    float det = ja * jd - jbc * jbc; //det(A) = a*d - b*c
+__device__ static float perlinNoise(float x, float y, int r1, int r2, int r3){
+    float total = 0.0;
 
-    float dx = (jd / det) * fnx + (jbc / det) * fny;
-    float dy = (jbc / det) * fnx + (ja / det) * fny;
+    float frequency = 0.015;
+    float persistence = 0.65;
+    float octaves = 16;
+    float amplitude = 1;
 
-    xn.x = xn.x - dx;
-    xn.y = xn.y - dy;
+    for(int lcv = 0; lcv < octaves; ++lcv){
+	total += smooth(x * frequency, y * frequency, r1, r2, r3) * amplitude;
+	frequency *= 2;
+	amplitude *= persistence;
+    }
 
-    if(near(xn.x, 1) && near(xn.y, 0)){
-	if(times == CIRCLE && last == 1){
-	    return 1;
-	}
+    const float cloudCoverage = 0;
+    const float cloudDensity = 1;
 
-	if(last == 1){
-	    ++times;
-	} else {
-	    times = 1;
-	}
+    total = (total + cloudCoverage) * cloudDensity;
 
-	last = 1;
-    } else if(near(xn.x, -1/2) && near(xn.y, SQRT3 / 2)){
-	if(times == CIRCLE && last == 2){
-	    return 2;
-	}
-
-	if(last == 2){
-	    ++times;
-	} else {
-	    times = 1;
-	}
-
-	last = 2;
-    } else if(near(xn.x, -1/2) && near(xn.y, -SQRT3 / 2)){
-	if(times == CIRCLE && last == 3){
-	    return 3;
-	}
-
-	if(last == 3){
-	    ++times;
-	} else {
-	    times = 1;
-	}
-
-	last = 3;
+    if(total <  0){
+	return 0.0;
+    } else if(total > 1.0){
+	return 1.0;
     } else {
-	times = 0;
-	last = 0;
+	return total;
     }
-
-    ++current;
-    }
-
-    //Once we are here, it means that we are out the loop: black point
-    return 0;
 }

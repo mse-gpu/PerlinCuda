@@ -13,8 +13,8 @@ int bench(int argc, char** argv);
 int launchApplication(int argc, char** argv);
 
 int main(int argc, char** argv){
-    //return launchApplication(argc, argv);
-    return bench(argc, argv);
+    return launchApplication(argc, argv);
+    //return bench(argc, argv);
 }
 
 int launchApplication(int argc, char** argv){
@@ -50,11 +50,11 @@ int launchApplication(int argc, char** argv){
     }
 }
 
-#define DIM_H 10000
-#define DIM_W 10000
+#define DIM_H 1000
+#define DIM_W 1000
 #define TIMES 25
 
-void launchPerlinAnimation(uchar4* ptrDevPixels, int w, int h, const DomaineMaths& domainNew);
+void launchPerlinAnimation(uchar4* ptrDevPixels, int w, int h, const DomaineMaths& domainNew, int t);
 
 int bench(int argc, char** argv){
     std::cout << "Launch benchmark" << std::endl;
@@ -81,7 +81,7 @@ int bench(int argc, char** argv){
 	    DomaineMaths domain(0, 0, DIM_W, DIM_H);
 
 	    for(int i = 0; i < TIMES; ++i){
-		launchPerlinAnimation(image, DIM_W, DIM_H, domain);
+		launchPerlinAnimation(image, DIM_W, DIM_H, domain, 1);
 	    }
 
 	    float elapsed = 0;

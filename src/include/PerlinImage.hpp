@@ -17,7 +17,7 @@ class GLPerlinImage : public GLImageFonctionelCudaSelections {
 	virtual void idleFunc();
 
     private:
-	int N;
+	int t;
 };
 
 #endif
