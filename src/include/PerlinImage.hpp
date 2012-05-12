@@ -7,10 +7,10 @@
 #include "DomaineMaths.h"
 #include "GLImageFonctionelCudaSelections.h"
 
-class GLNewtonImage : public GLImageFonctionelCudaSelections {
+class GLPerlinImage : public GLImageFonctionelCudaSelections {
     public:
-	GLNewtonImage(int dx, int dy, DomaineMaths domain);
-	virtual ~GLNewtonImage();
+	GLPerlinImage(int dx, int dy, DomaineMaths domain);
+	virtual ~GLPerlinImage();
 
     protected:
 	virtual void performKernel(uchar4* ptrDevPixels, int w, int h, const DomaineMaths& domainNew);

@@ -4,7 +4,7 @@
 #include "GLUTWindowManagers.h"
 #include "cuda_gl_interop.h"
 
-#include "NewtonImage.hpp"
+#include "PerlinImage.hpp"
 
 #include "cudaTools.h"
 #include "deviceTools.h"
@@ -30,14 +30,14 @@ int launchApplication(int argc, char** argv){
 
 	GLImageFonctionelCudaSelections* image;
 
-	std::cout << "Launch Newton in Cuda" << std::endl;
+	std::cout << "Launch Perlin in Cuda" << std::endl;
 
 	int w = 800;
 	int h = 800;
 
 	DomaineMaths domain(0, 0, w, h);
 
-	image = new GLNewtonImage(w, h, domain);
+	image = new GLPerlinImage(w, h, domain);
 
 	glutWindowManager->createWindow(image);
 	glutWindowManager->runALL(); //Blocking
@@ -54,7 +54,7 @@ int launchApplication(int argc, char** argv){
 #define DIM_W 10000
 #define TIMES 25
 
-void launchNewtonAnimation(uchar4* ptrDevPixels, int w, int h, const DomaineMaths& domainNew);
+void launchPerlinAnimation(uchar4* ptrDevPixels, int w, int h, const DomaineMaths& domainNew);
 
 int bench(int argc, char** argv){
     std::cout << "Launch benchmark" << std::endl;
@@ -81,7 +81,7 @@ int bench(int argc, char** argv){
 	    DomaineMaths domain(0, 0, DIM_W, DIM_H);
 
 	    for(int i = 0; i < TIMES; ++i){
-		launchNewtonAnimation(image, DIM_W, DIM_H, domain);
+		launchPerlinAnimation(image, DIM_W, DIM_H, domain);
 	    }
 
 	    float elapsed = 0;

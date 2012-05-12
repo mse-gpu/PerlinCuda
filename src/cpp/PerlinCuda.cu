@@ -4,7 +4,7 @@ __global__ static void newtonAnimation(uchar4* ptrDevPixels, int w, int h, Domai
 
 __device__ static int newton(float x, float y);
 
-void launchNewtonAnimation(uchar4* ptrDevPixels, int w, int h, const DomaineMaths& domainNew){
+void launchPerlinAnimation(uchar4* ptrDevPixels, int w, int h, const DomaineMaths& domainNew){
     dim3 blockPerGrid = dim3(32, 16, 1);
     dim3 threadPerBlock = dim3(32, 16, 1);
 
