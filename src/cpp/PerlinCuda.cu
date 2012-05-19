@@ -37,12 +37,11 @@ __global__ static void perlinAnimation(uchar4* ptrDevPixels, int w, int h, Domai
 	x = domainNew.x0 + pixelJ * dx;
 	y = domainNew.y0 + pixelI * dy;
 
-
 	float c = perlinNoise(x+t,y, r1, r2, r3);
 
-	ptrDevPixels[tid].x = 135;
-	ptrDevPixels[tid].y = 206;
-	ptrDevPixels[tid].z = 250;
+	ptrDevPixels[tid].x = 178;
+	ptrDevPixels[tid].y = 34;
+	ptrDevPixels[tid].z = 34;
 	ptrDevPixels[tid].w = c * 255.0;
 
 	tid += nbThreadCuda;
@@ -77,9 +76,9 @@ __device__ static float perlinNoise(float x, float y, int r1, int r2, int r3){
     float total = 0.0;
 
     float frequency = 0.015;
-    float persistence = 0.65;
+    float persistence = 0.45;
     float octaves = 16;
-    float amplitude = 1;
+    float amplitude = 0.5;
 
     for(int lcv = 0; lcv < octaves; ++lcv){
 	total += smooth(x * frequency, y * frequency, r1, r2, r3) * amplitude;
@@ -88,7 +87,7 @@ __device__ static float perlinNoise(float x, float y, int r1, int r2, int r3){
     }
 
     const float cloudCoverage = 0;
-    const float cloudDensity = 1;
+    const float cloudDensity = 0.75;
 
     total = (total + cloudCoverage) * cloudDensity;
 

@@ -13,8 +13,8 @@ int bench(int argc, char** argv);
 int launchApplication(int argc, char** argv);
 
 int main(int argc, char** argv){
-    //return launchApplication(argc, argv);
-    return bench(argc, argv);
+    return launchApplication(argc, argv);
+    //return bench(argc, argv);
 }
 
 int launchApplication(int argc, char** argv){
