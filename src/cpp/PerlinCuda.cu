@@ -13,7 +13,7 @@ void launchPerlinAnimation(uchar4* ptrDevPixels, int w, int h, const DomaineMath
     perlinAnimation<<<blockPerGrid,threadPerBlock>>>(ptrDevPixels, w, h, domainNew, r1, r2, r3, t);
 }
 
-__device__ static float perlinNoise(float x, float y, int r1, int r2, int r3);
+__device__ static float perlinNoise(float x, float y, int r1, int r2, int r3, int t);
 
 __global__ static void perlinAnimation(uchar4* ptrDevPixels, int w, int h, DomaineMaths domainNew, int r1, int r2, int r3, int t){
     int i = threadIdx.y + blockIdx.y * blockDim.y;
@@ -37,11 +37,11 @@ __global__ static void perlinAnimation(uchar4* ptrDevPixels, int w, int h, Domai
 	x = domainNew.x0 + pixelJ * dx;
 	y = domainNew.y0 + pixelI * dy;
 
-	float c = perlinNoise(x+t,y, r1, r2, r3);
+	float c = perlinNoise(x,y, r1, r2, r3, t);
 
-	ptrDevPixels[tid].x = 178;
-	ptrDevPixels[tid].y = 34;
-	ptrDevPixels[tid].z = 34;
+	ptrDevPixels[tid].x = 135;
+	ptrDevPixels[tid].y = 206;
+	ptrDevPixels[tid].z = 250;
 	ptrDevPixels[tid].w = c * 255.0;
 
 	tid += nbThreadCuda;
@@ -72,13 +72,25 @@ __device__ static float smooth(float x, float y, int r1, int r2, int r3){
     return interpolate(i1, i2, y - (int)y);
 }
 
-__device__ static float perlinNoise(float x, float y, int r1, int r2, int r3){
+__device__ static float scale(float from, float to, int scale, int t){
+    float direction = t % (scale * 2);
+
+    if(direction < scale){
+	return from + (to - from) * (float)(t % scale) / (float)scale;
+    } else {
+	return to - (to - from) * (float)(t % scale) / (float)scale;
+    }
+}
+
+__device__ static float perlinNoise(float x, float y, int r1, int r2, int r3, int t){
     float total = 0.0;
 
-    float frequency = 0.015;
-    float persistence = 0.45;
-    float octaves = 16;
+    float frequency = scale(0.010, 0.025, 5000, t);
+    float persistence = scale(0.20, 0.65, 5000, t);
+    float octaves = scale(2, 33, 5000, t);
     float amplitude = 0.5;
+
+    x = x + t / 10;
 
     for(int lcv = 0; lcv < octaves; ++lcv){
 	total += smooth(x * frequency, y * frequency, r1, r2, r3) * amplitude;
